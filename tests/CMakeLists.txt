@@ -1,0 +1,8 @@
+include_directories(${PROJECT_SOURCE_DIR}/core/include)
+include_directories(${PROJECT_SOURCE_DIR}/net/include)
+find_package(GTest REQUIRED)
+aux_source_directory(. ALL_TEST_SRCS)
+add_executable(unit_test ${ALL_TEST_SRCS})
+target_link_libraries(unit_test gtest gtest_main pthread hlink_core hlink_net)
+include(GoogleTest)
+gtest_discover_tests(unit_test)
