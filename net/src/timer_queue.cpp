@@ -82,11 +82,13 @@ void hlink::net::TimerQueue::Impl::cancel_timer_in_loop(TimerId timer_id) {
 
 void hlink::net::TimerQueue::Impl::handle_read() {
     loop_->assert_in_loop_thread();
+    // 必须读，否则timerfd时间不消失
     read_timerfd(timerfd_);
     const auto now = time::get_current_time();
     auto expired_timers = get_expired(now);
 
     run_expired_timers_ = true;
+    // 清理上一轮的标记
     cancel_timers_.clear();
 
     for (const auto &val: expired_timers | std::views::values) {
@@ -123,6 +125,7 @@ void hlink::net::TimerQueue::Impl::reset(const std::vector<Entry> &expired, cons
             timer->restart(now);
             insert(timer);
         } else {
+            // 这里会清除cancel_timers_中的timer
             delete timer;
         }
     }

@@ -35,7 +35,7 @@ public:
 
     ~Impl();
 
-    void start() const;
+    void start();
 
     void set_thread_num(size_t num_threads) const;
 
@@ -84,8 +84,8 @@ hlink::net::TcpServer::Impl::Impl(EventLoop *loop, const InetAddr &listen_addr, 
     message_callback_(default_message_callback),
     started_(false),
     next_conn_id_(1) {
-    acceptor_->set_new_connection_callback([this](const int sockfd, const InetAddr &listen_addr) {
-        this->new_connection(sockfd, listen_addr);
+    acceptor_->set_new_connection_callback([this](const int sockfd, const InetAddr &addr) {
+        this->new_connection(sockfd, addr);
     });
 }
 
@@ -100,8 +100,9 @@ hlink::net::TcpServer::Impl::~Impl() {
     }
 }
 
-void hlink::net::TcpServer::Impl::start() const {
+void hlink::net::TcpServer::Impl::start() {
     if (started_ == false) {
+        started_ = true;
         thread_pool_->start(thread_init_callback_);
         loop_->run_in_loop([this] {
             this->acceptor_->listen();
@@ -157,8 +158,8 @@ void hlink::net::TcpServer::Impl::new_connection(int sockfd, const InetAddr &pee
     conn->set_connection_callback(connection_callback_);
     conn->set_message_callback(message_callback_);
     conn->set_write_complete_callback(write_complete_callback_);
-    conn->set_close_callback([this](const TcpConnPtr &conn) {
-        this->remove_connection(conn);
+    conn->set_close_callback([this](const TcpConnPtr &conn_ptr) {
+        this->remove_connection(conn_ptr);
     });
 
     io_loop->run_in_loop([conn] {
@@ -174,7 +175,6 @@ void hlink::net::TcpServer::Impl::remove_connection(const TcpConnPtr &conn) {
 
 void hlink::net::TcpServer::Impl::remove_connection_in_loop(const TcpConnPtr &conn) {
     loop_->assert_in_loop_thread();
-    std::string conn_name = std::string("conn") + std::to_string(next_conn_id_ - 1);
     const size_t n = connections_.erase(std::string(conn->get_name()));
     assert(n == 1);
     EventLoop *io_loop = conn->get_loop();
@@ -189,7 +189,7 @@ hlink::net::TcpServer::TcpServer(EventLoop *loop, const InetAddr &listen_addr, O
 
 hlink::net::TcpServer::~TcpServer() = default;
 
-void hlink::net::TcpServer::start() const {
+void hlink::net::TcpServer::start() {
     impl_->start();
 }
 

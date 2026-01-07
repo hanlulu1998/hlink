@@ -27,7 +27,7 @@ namespace hlink::net {
 
         ~TcpServer();
 
-        void start() const;
+        void start();
 
         [[nodiscard]] const std::string &ip_port() const;
 

@@ -23,7 +23,7 @@ void print(const char *msg) {
     }
 }
 
-void cancel(hlink::net::TimerId timer_id) {
+void cancel(const hlink::net::TimerId timer_id) {
     g_test_timer_queue_loop->cancel(timer_id);
     GTEST_LOG_(INFO) << "cancelled at " << hlink::time::get_current_time() << "\n";
 }

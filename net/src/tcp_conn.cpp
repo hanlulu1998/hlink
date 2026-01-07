@@ -10,13 +10,24 @@
 #include "sys_socket.hpp"
 #include "timerid.hpp"
 #include "weak_callback.hpp"
+#include <csignal>
 
+// 忽略因为客户端断开没来得及感知继续Write触发的中断
+class IgnoreSigPipe {
+public:
+    IgnoreSigPipe() {
+        signal(SIGPIPE, SIG_IGN);
+    }
+};
+
+IgnoreSigPipe _;
 
 void hlink::net::TcpConn::handle_read(const TimeStamp receive_time) {
     loop_->assert_in_loop_thread();
     int saved_errno = 0;
 
     if (const ssize_t n = input_buffer_.append_from_fd(channel_->fd(), &saved_errno); n > 0) {
+        // 这里约定了回调只是简单的数据处理，而不是关闭连接和再发送数据
         if (message_callback_) {
             message_callback_(shared_from_this(), &input_buffer_, receive_time);
         }
@@ -64,7 +75,7 @@ void hlink::net::TcpConn::handle_close() {
         connection_callback_(guard);
     }
     if (close_callback_) {
-        connection_callback_(guard);
+        close_callback_(guard);
     }
 }
 
@@ -73,7 +84,7 @@ void hlink::net::TcpConn::handle_error() const {
     LOG_ERROR("TcpConnection::handleError [{}] - SO_ERROR = {}", name_, strerror(err));
 }
 
-void hlink::net::TcpConn::send_in_loop(const void *message, size_t len) {
+void hlink::net::TcpConn::send_in_loop(const void *message, const size_t len) {
     loop_->assert_in_loop_thread();
     ssize_t n_written{0};
     size_t remaining = len;
@@ -315,7 +326,7 @@ void hlink::net::TcpConn::force_close() {
     }
 }
 
-void hlink::net::TcpConn::force_close_with_delay(int64_t delay_ms) {
+void hlink::net::TcpConn::force_close_with_delay(const int64_t delay_ms) {
     if (state_ == State::CONNECTED || state_ == State::DISCONNECTING) {
         set_state(State::DISCONNECTING);
         loop_->run_after(delay_ms, [this] {

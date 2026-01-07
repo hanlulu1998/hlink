@@ -211,7 +211,7 @@ void hlink::net::get_local_addr(sockaddr_in6 *addr, const int sockfd) {
     }
 }
 
-void hlink::net::get_peer_addr(sockaddr_in6 *addr, int sockfd) {
+void hlink::net::get_peer_addr(sockaddr_in6 *addr, const int sockfd) {
     socklen_t addr_len = sizeof(*addr);
     MEM_ZERO_SET(addr, addr_len);
     if (getpeername(sockfd, reinterpret_cast<sockaddr *>(addr), &addr_len) < 0) {

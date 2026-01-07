@@ -5,7 +5,7 @@
 #include "blocking_queue.hpp"
 #include <string>
 
-class BlockingQueueTest : public ::testing::Test {
+class BlockingQueueTest : public testing::Test {
 public:
     hlink::BlockingQueue<std::string> blocking_queue;
 };

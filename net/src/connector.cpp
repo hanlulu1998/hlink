@@ -9,13 +9,12 @@
 #include "sys_socket.hpp"
 #include "channel.hpp"
 #include "eventloop.hpp"
-#include "macros.hpp"
 
 hlink::net::Connector::Connector(EventLoop *loop, const InetAddr &server_addr) : loop_(loop),
-    server_addr_(server_addr),
-    connected_(false),
-    state_(State::DISCONNECTED),
-    retry_delay_ms_(INIT_RETRY_DELAY_MS) {
+                                                                                 server_addr_(server_addr),
+                                                                                 started_(false),
+                                                                                 state_(State::DISCONNECTED),
+                                                                                 retry_delay_ms_(INIT_RETRY_DELAY_MS) {
 }
 
 
@@ -24,14 +23,14 @@ void hlink::net::Connector::set_new_connection_callback(NewConnectionCallback cb
 }
 
 void hlink::net::Connector::start() {
-    connected_ = true;
+    started_ = true;
     loop_->run_in_loop([this] {
         this->start_in_loop();
     });
 }
 
 void hlink::net::Connector::stop() {
-    connected_ = false;
+    started_ = false;
     loop_->queue_in_loop([this] {
         this->stop_in_loop();
     });
@@ -41,7 +40,7 @@ void hlink::net::Connector::restart() {
     loop_->assert_in_loop_thread();
     set_state(State::DISCONNECTED);
     retry_delay_ms_ = INIT_RETRY_DELAY_MS;
-    connected_ = true;
+    started_ = true;
     start_in_loop();
 }
 
@@ -56,7 +55,7 @@ void hlink::net::Connector::set_state(const State state) {
 void hlink::net::Connector::start_in_loop() {
     loop_->assert_in_loop_thread();
     assert(state_== State::DISCONNECTED);
-    if (connected_) {
+    if (started_) {
         connect();
     } else {
         LOG_DEBUG("do not connect");
@@ -68,7 +67,7 @@ void hlink::net::Connector::stop_in_loop() {
     if (state_ == State::CONNECTING) {
         set_state(State::DISCONNECTED);
         const int sockfd = remove_and_reset_channel();
-        retry(sockfd);
+        close(sockfd);
     }
 }
 
@@ -125,12 +124,13 @@ void hlink::net::Connector::handle_write() {
         const int sockfd = remove_and_reset_channel();
         if (int err = get_socket_error(sockfd)) {
             LOG_WARN("Connector::handle_write - SO_ERROR = {}: {}", err, strerror(err));
+            retry(sockfd);
         } else if (is_self_connection(sockfd)) {
             LOG_WARN("Connector::handle_write self connect");
             retry(sockfd);
         } else {
             set_state(State::CONNECTED);
-            if (connected_) {
+            if (started_) {
                 new_connection_callback_(sockfd);
             } else {
                 close(sockfd);
@@ -154,7 +154,7 @@ void hlink::net::Connector::handle_error() {
 void hlink::net::Connector::retry(const int sockfd) {
     close(sockfd);
     set_state(State::DISCONNECTED);
-    if (connected_) {
+    if (started_) {
         LOG_INFO("Connector::retry - Retry connecting to {} in {} ms", server_addr_.to_ip_port(), retry_delay_ms_);
 
         loop_->run_after(retry_delay_ms_, [this] {
@@ -186,8 +186,6 @@ const char *hlink::net::Connector::state_to_string() const {
             return "CONNECTED";
         case State::DISCONNECTED:
             return "DISCONNECTED";
-        case State::DISCONNECTING:
-            return "DISCONNECTING";
         default:
             return "UNKNOWN";
     }

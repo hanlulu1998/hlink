@@ -18,7 +18,7 @@ public:
             this->on_connection(conn);
         });
 
-        server_.set_message_callback([this](const TcpConnPtr &conn, Buffer *buf, TimeStamp time) {
+        server_.set_message_callback([this](const TcpConnPtr &conn, Buffer *buf, const TimeStamp time) {
             this->on_message(conn, buf, time);
         });
 
@@ -46,7 +46,7 @@ private:
         conn->send("hello\n");
     }
 
-    void on_message(const TcpConnPtr &conn, Buffer *buf, TimeStamp time) {
+    void on_message(const TcpConnPtr &conn, Buffer *buf, const TimeStamp time) {
         const std::string message = buf->pop_all_as_string();
         GTEST_LOG_(INFO) << conn->get_name() << " recv " << message.size() << "bytes at " << time;
         if (message == "exit\n") {

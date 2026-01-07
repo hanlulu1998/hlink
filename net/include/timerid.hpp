@@ -17,15 +17,15 @@ namespace hlink::net {
                 callback_();
             }
 
-            TimeStamp expiration() const {
+            [[nodiscard]] TimeStamp expiration() const {
                 return expiration_;
             }
 
-            bool repeat() const {
+            [[nodiscard]] bool repeat() const {
                 return repeat_;
             }
 
-            int64_t sequence() const {
+            [[nodiscard]] int64_t sequence() const {
                 return sequence_;
             }
 
@@ -34,12 +34,13 @@ namespace hlink::net {
             }
 
             void restart(TimeStamp now);
+
         private:
             const TimerCallback callback_{nullptr};
             TimeStamp expiration_;
-            const ino64_t interval_ms_{0};
-            const bool repeat_{false};
-            const int64_t sequence_{1};
+            const int64_t interval_ms_;
+            const bool repeat_;
+            const int64_t sequence_;
             inline static std::atomic_int64_t num_created_timers_{0};
         };
 

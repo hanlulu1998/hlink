@@ -7,10 +7,15 @@ set(CMAKE_BUILD_TYPE Debug)
 
 find_package(spdlog REQUIRED)
 
-include_directories(${PROJECT_SOURCE_DIR}/core/include)
-include_directories(${PROJECT_SOURCE_DIR}/net/include)
-add_executable(hlink main.cpp)
-target_link_libraries(hlink PRIVATE hlink_core hlink_net)
+
+add_library(hlink INTERFACE)
+target_link_libraries(hlink INTERFACE hlink_core hlink_net)
+target_include_directories(hlink
+        INTERFACE
+        ${PROJECT_SOURCE_DIR}/core/include
+        ${PROJECT_SOURCE_DIR}/net/include
+)
+
 enable_testing()
 add_subdirectory(core)
 add_subdirectory(net)

@@ -34,7 +34,6 @@ namespace hlink::net {
             DISCONNECTED,
             CONNECTING,
             CONNECTED,
-            DISCONNECTING,
         };
 
         static constexpr int MAX_RETRY_DELAY_MS = 30 * 1000;
@@ -64,7 +63,7 @@ namespace hlink::net {
 
         EventLoop *loop_;
         InetAddr server_addr_;
-        bool connected_;
+        bool started_;
         State state_;
         std::unique_ptr<Channel> channel_;
         NewConnectionCallback new_connection_callback_;

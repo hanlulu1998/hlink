@@ -10,7 +10,7 @@
 #include "logging.hpp"
 #include "macros.hpp"
 
-hlink::net::Socket::Socket(int sockfd) : sockfd_(sockfd) {
+hlink::net::Socket::Socket(const int sockfd) : sockfd_(sockfd) {
 }
 
 hlink::net::Socket::Socket(Socket &&sock) noexcept {
@@ -28,9 +28,9 @@ bool hlink::net::Socket::get_tcp_info(tcp_info &info) const {
     return getsockopt(sockfd_, SOL_TCP, TCP_INFO, &info, &len) == 0;
 }
 
-bool hlink::net::Socket::get_tcp_info_string(char *buf, int len) const {
+bool hlink::net::Socket::get_tcp_info_string(char *buf, const int len) const {
     tcp_info tcpi{};
-    bool ok = get_tcp_info(tcpi);
+    const bool ok = get_tcp_info(tcpi);
     if (ok) {
         snprintf(buf, len, "unrecovered=%u "
                  "rto=%u ato=%u snd_mss=%u rcv_mss=%u "
@@ -66,7 +66,7 @@ void hlink::net::Socket::listen() const {
 }
 
 int hlink::net::Socket::accept(InetAddr &peer_addr) const {
-    sockaddr_in6 addr;
+    sockaddr_in6 addr{};
     MEM_ZERO_SET(&addr, sizeof(addr));
     const int connfd = net::accept(sockfd_, &addr);
     if (connfd >= 0) {

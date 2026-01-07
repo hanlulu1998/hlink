@@ -67,7 +67,6 @@ const char *hlink::net::Poller::Impl::epoll_operation_to_string(const int op) {
             return "MOD";
         default:
             assert(false && "ERROR op");
-            return "Unknown Operation";
     }
 }
 

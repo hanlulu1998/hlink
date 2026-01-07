@@ -23,7 +23,7 @@ public:
 
     void listen();
 
-    bool is_listening() const;
+    [[nodiscard]] bool is_listening() const;
 
 private:
     void handle_read();
@@ -37,7 +37,7 @@ private:
 };
 
 
-hlink::net::Acceptor::Impl::Impl(EventLoop *loop, const InetAddr &listen_address, bool reuse_port) : loop_(loop),
+hlink::net::Acceptor::Impl::Impl(EventLoop *loop, const InetAddr &listen_address, const bool reuse_port) : loop_(loop),
     accept_socket_(create_noblocking(listen_address.get_family())),
     accept_channel_(loop, accept_socket_.fd()),
     idle_fd_(open("/dev/null",O_RDONLY | O_CLOEXEC)) {
@@ -76,8 +76,7 @@ bool hlink::net::Acceptor::Impl::is_listening() const {
 void hlink::net::Acceptor::Impl::handle_read() {
     loop_->assert_in_loop_thread();
     InetAddr peer_address;
-    const int connfd = accept_socket_.accept(peer_address);
-    if (connfd >= 0) {
+    if (const int connfd = accept_socket_.accept(peer_address); connfd >= 0) {
         if (new_connection_callback_) {
             new_connection_callback_(connfd, peer_address);
         } else {
@@ -88,7 +87,7 @@ void hlink::net::Acceptor::Impl::handle_read() {
         // 如果fd不够了，利用空闲的fd不断关闭
         if (errno == EMFILE) {
             close(idle_fd_);
-            idle_fd_ = ::accept(idle_fd_, nullptr, nullptr);
+            idle_fd_ = ::accept(accept_socket_.fd(), nullptr, nullptr);
             close(idle_fd_);
             idle_fd_ = open("/dev/null",O_RDONLY | O_CLOEXEC);
         }
@@ -100,6 +99,7 @@ void hlink::net::Acceptor::set_new_connection_callback(NewConnectionCallback cb)
 }
 
 hlink::net::Acceptor::~Acceptor() = default;
+
 
 hlink::net::Acceptor::Acceptor(EventLoop *loop, const InetAddr &listen_address, bool reuse_port) : impl_(
     std::make_unique<Impl>(loop, listen_address, reuse_port)) {

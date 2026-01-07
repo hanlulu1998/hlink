@@ -4,7 +4,6 @@
 
 #include "eventloop.hpp"
 
-#include <signal.h>
 #include "channel.hpp"
 #include "logging.hpp"
 #include "utils.hpp"
@@ -16,17 +15,6 @@
 #include "timerid.hpp"
 #include "timer_queue.hpp"
 thread_local hlink::net::EventLoop *loop_in_this_thread = nullptr;
-
-// 忽略因为客户端断开没来得及感知继续Write触发的中断
-class IgnoreSigPipe {
-public:
-    IgnoreSigPipe() {
-        signal(SIGPIPE, SIG_IGN);
-    }
-};
-
-IgnoreSigPipe _;
-
 
 class hlink::net::EventLoop::Impl {
 public:
@@ -86,7 +74,7 @@ private:
 
     void do_queued_functors();
 
-    EventLoop * const parent_loop_{nullptr};
+    EventLoop *const parent_loop_{nullptr};
 
 
     using ChannelList = std::vector<Channel *>;

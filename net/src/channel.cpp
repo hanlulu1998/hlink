@@ -177,7 +177,7 @@ int hlink::net::Channel::Impl::flag() const {
     return flag_;
 }
 
-void hlink::net::Channel::Impl::set_flag(int flag) {
+void hlink::net::Channel::Impl::set_flag(const int flag) {
     flag_ = flag;
 }
 

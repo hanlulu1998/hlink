@@ -49,7 +49,6 @@ void hlink::net::EventLoopThreadPool::Impl::start(ThreadInitCallback init_callba
 
     if (num_threads_ == 0 && init_callback) {
         init_callback(base_loop_);
-
     }
 }
 

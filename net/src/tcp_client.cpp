@@ -10,10 +10,10 @@
 #include "buffer.hpp"
 #include "logging.hpp"
 #include <mutex>
-#include "channel.hpp"
 #include "macros.hpp"
 #include "sys_socket.hpp"
 #include "timerid.hpp"
+#include "channel.hpp"
 
 inline void default_connection_callback(const hlink::net::TcpConnPtr &connection) {
     LOG_INFO("{} -> {} is {}", connection->get_local_addr().to_ip_port(),
@@ -82,20 +82,21 @@ hlink::net::TcpClient::Impl::Impl(EventLoop *loop, const InetAddr &server_addr) 
 }
 
 hlink::net::TcpClient::Impl::~Impl() {
-    TcpConnPtr conn;
+    TcpConnPtr conn{nullptr};
     bool unique = false; {
         std::lock_guard lg(mutex_);
         unique = connection_.unique();
         conn = connection_;
     }
 
-    auto close_callback = [this](const TcpConnPtr &conn) {
-        this->loop_->queue_in_loop([conn] {
-            conn->connect_destroyed();
+
+    auto close_callback = [this](const TcpConnPtr &conn_ptr) {
+        this->loop_->queue_in_loop([conn_ptr] {
+            conn_ptr->connect_destroyed();
         });
     };
 
-    if (conn) {
+    if (conn != nullptr) {
         loop_->run_in_loop([conn, close_callback] {
             conn->set_close_callback(close_callback);
         });
@@ -104,9 +105,6 @@ hlink::net::TcpClient::Impl::~Impl() {
         }
     } else {
         connector_->stop();
-        loop_->run_after(1000, [conn,close_callback] {
-            close_callback(conn);
-        });
     }
 }
 
@@ -167,7 +165,7 @@ void hlink::net::TcpClient::Impl::new_connection(int sockfd) {
     InetAddr local_addr(addr);
 
     ++next_conn_id_;
-    auto conn = std::make_shared<TcpConn>(
+    const auto conn = std::make_shared<TcpConn>(
         loop_,
         std::string("conn") + std::to_string(next_conn_id_ - 1),
         sockfd,
@@ -178,8 +176,8 @@ void hlink::net::TcpClient::Impl::new_connection(int sockfd) {
     conn->set_connection_callback(connection_callback_);
     conn->set_message_callback(message_callback_);
     conn->set_write_complete_callback(write_complete_callback_);
-    conn->set_close_callback([this](const TcpConnPtr &conn) {
-        this->remove_connection(conn);
+    conn->set_close_callback([this](const TcpConnPtr &conn_ptr) {
+        this->remove_connection(conn_ptr);
     }); {
         std::lock_guard lg(mutex_);
         connection_ = conn;

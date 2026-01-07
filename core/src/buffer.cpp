@@ -216,7 +216,7 @@ void hlink::Buffer::Impl::prepend(const char *data, const size_t len) {
     std::copy_n(data, len, mutable_read_ptr());
 }
 
-void hlink::Buffer::Impl::prepend(std::string_view sv) {
+void hlink::Buffer::Impl::prepend(const std::string_view sv) {
     prepend(sv.data(), sv.size());
 }
 
@@ -283,7 +283,7 @@ void hlink::Buffer::Impl::write_seek(const ssize_t len) {
 }
 
 ssize_t hlink::Buffer::Impl::append_from_fd(const int fd, int *error) {
-    char extra_buffer[EXTRA_BUFFER_SIZE]{0};
+    char extra_buffer[EXTRA_BUFFER_SIZE]{};
     iovec vec[2];
     const size_t writable = writable_bytes();
     vec[0].iov_base = mutable_write_ptr();

@@ -121,7 +121,7 @@ TEST(BufferCase, TestBufferPrepend) {
     ASSERT_EQ(buffer.writable_bytes(), Buffer::INITIAL_SIZE - 200);
     ASSERT_EQ(buffer.prependable_bytes(), Buffer::CHEAP_PREPEND);
 
-    const int x = 0;
+    constexpr int x = 0;
 
     buffer.prepend(&x, sizeof(x));
 
